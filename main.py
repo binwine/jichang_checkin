@@ -1,6 +1,7 @@
 import requests, json, os, re
 from html.parser import HTMLParser
 from urllib.parse import urlparse, parse_qs
+from qq_notify import QQNotifier
 
 # 机场的地址
 url = os.environ.get('URL')
@@ -10,12 +11,24 @@ config = os.environ.get('CONFIG')
 # EMAIL Secret 存放企业微信群机器人的 key，也支持完整 Webhook 地址。
 WECOM_KEY = os.environ.get('EMAIL', '').strip()
 WECOM_ENDPOINT = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send'
+qq_notifier = QQNotifier(
+        os.environ.get('AppID', ''),
+        os.environ.get('AppSecret', ''),
+        os.environ.get('openID', ''),
+)
 
 login_url = '{}/auth/login'.format(url)
 check_url = '{}/user/checkin'.format(url)
 
 
 def send_notification(content):
+        """分别发送到已配置的渠道，一个渠道失败不阻止另一个。"""
+        wecom_sent = send_wecom_notification(content)
+        qq_sent = qq_notifier.send(content)
+        return wecom_sent or qq_sent
+
+
+def send_wecom_notification(content):
         """发送企业微信文本通知；失败只记录状态，不影响签到结果。"""
         if not WECOM_KEY:
                 return False
