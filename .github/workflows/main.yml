@@ -36,9 +36,8 @@ jobs:
       - name: Run sign
         env:
           URL: ${{ secrets.URL }}
-          SCKEY: ${{ secrets.SCKEY }}
+          # EMAIL 用于企业微信群机器人密钥；登录账号密码仍由 CONFIG 提供。
           EMAIL: ${{ secrets.EMAIL }}
-          PASSWD: ${{ secrets.PASSWD }}
           CONFIG: ${{ secrets.CONFIG }}
         run: |
           python3 ./main.py

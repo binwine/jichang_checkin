@@ -1,17 +1,57 @@
 import requests, json, os, re
 from html.parser import HTMLParser
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 # 机场的地址
 url = os.environ.get('URL')
 # 配置用户名（一般是邮箱）
 
 config = os.environ.get('CONFIG')
-# server酱
-SCKEY = os.environ.get('SCKEY')
+# EMAIL Secret 存放企业微信群机器人的 key，也支持完整 Webhook 地址。
+WECOM_KEY = os.environ.get('EMAIL', '').strip()
+WECOM_ENDPOINT = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send'
 
 login_url = '{}/auth/login'.format(url)
 check_url = '{}/user/checkin'.format(url)
+
+
+def send_notification(content):
+        """发送企业微信文本通知；失败只记录状态，不影响签到结果。"""
+        if not WECOM_KEY:
+                return False
+        try:
+                key = WECOM_KEY
+                if '://' in key:
+                        endpoint = urlparse(key)
+                        if (endpoint.scheme != 'https'
+                                or endpoint.netloc != 'qyapi.weixin.qq.com'
+                                or endpoint.path != '/cgi-bin/webhook/send'):
+                                raise ValueError('Webhook 地址不正确')
+                        keys = parse_qs(endpoint.query).get('key', [])
+                        if len(keys) != 1 or not keys[0].strip():
+                                raise ValueError('Webhook 缺少 key')
+                        key = keys[0]
+                response = requests.post(
+                        url=WECOM_ENDPOINT,
+                        params={'key': key},
+                        json={'msgtype': 'text', 'text': {'content': f'机场签到\n{content}'}},
+                        timeout=30,
+                        allow_redirects=False,
+                )
+                if response.status_code != 200:
+                        print(f'企业微信推送失败：HTTP {response.status_code}')
+                        return False
+                result = response.json()
+                if result.get('errcode') != 0:
+                        print('企业微信推送失败：接口未返回 errcode=0，请检查机器人配置')
+                        return False
+                print('企业微信推送成功')
+                return True
+        except Exception as ex:
+                # requests 异常可能含有带密钥的 URL，因此不直接输出异常内容。
+                print(f'企业微信推送失败：{type(ex).__name__}，请检查 EMAIL 配置及网络')
+                return False
+
 
 def build_login_data(user, pwd):
         """按 onesy3 登录页构造表单，未启用两步验证时 code 留空。"""
@@ -95,7 +135,6 @@ def select_subaccount(session, header):
 
 def sign(order,user,pwd):
         session = requests.session()
-        global url,SCKEY
         header = {
         'origin': url,
         'referer': login_url,
@@ -123,10 +162,7 @@ def sign(order,user,pwd):
                 if not login_succeeded(response):
                         print(f'登录失败: {message}')
                         content = f'登录失败: {message}'
-                        if SCKEY != '':
-                                push_url = 'https://sctapi.ftqq.com/{}.send?title=机场签到&desp={}'.format(SCKEY, content)
-                                requests.post(url=push_url)
-                                print('推送成功')
+                        send_notification(f'账号{order}：{content}')
                         return
 
                 if str(response.get('ret')) == '2':
@@ -142,18 +178,12 @@ def sign(order,user,pwd):
                 print(result['msg'])
                 content = result['msg']
                 # 进行推送
-                if SCKEY != '':
-                        push_url = 'https://sctapi.ftqq.com/{}.send?title=机场签到&desp={}'.format(SCKEY, content)
-                        requests.post(url=push_url)
-                        print('推送成功')
+                send_notification(f'账号{order}：{content}')
         except Exception as ex:
                 content = '签到失败'
                 print(content)
                 print("出现如下异常%s"%ex)
-                if SCKEY != '':
-                        push_url = 'https://sctapi.ftqq.com/{}.send?title=机场签到&desp={}'.format(SCKEY, content)
-                        requests.post(url=push_url)
-                        print('推送成功')
+                send_notification(f'账号{order}：{content}')
         print('===账号{order}签到结束===\n'.format(order=order))
 if __name__ == '__main__':
         configs = config.splitlines()
