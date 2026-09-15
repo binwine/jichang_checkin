@@ -38,9 +38,9 @@ jobs:
           URL: ${{ secrets.URL }}
           # EMAIL 用于企业微信群机器人密钥；登录账号密码仍由 CONFIG 提供。
           EMAIL: ${{ secrets.EMAIL }}
-          QQ_APP_ID: ${{ secrets.QQ_APP_ID }}
-          QQ_APP_SECRET: ${{ secrets.QQ_APP_SECRET }}
-          QQ_OPEN_ID: ${{ secrets.QQ_OPEN_ID }}
+          APPID: ${{ secrets.APPID }}
+          APPSECRET: ${{ secrets.APPSECRET }}
+          OPENID: ${{ secrets.OPENID }}
           CONFIG: ${{ secrets.CONFIG }}
         run: |
           python3 ./main.py
