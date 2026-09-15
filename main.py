@@ -12,9 +12,9 @@ config = os.environ.get('CONFIG')
 WECOM_KEY = os.environ.get('EMAIL', '').strip()
 WECOM_ENDPOINT = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send'
 qq_notifier = QQNotifier(
-        os.environ.get('AppID', ''),
-        os.environ.get('AppSecret', ''),
-        os.environ.get('openID', ''),
+        os.environ.get('APPID', ''),
+        os.environ.get('APPSECRET', ''),
+        os.environ.get('OPENID', ''),
 )
 
 login_url = '{}/auth/login'.format(url)
