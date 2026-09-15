@@ -1,6 +1,4 @@
-import requests, json, os, time
-from urllib.parse import urlparse
-from geeked import Geeked
+import requests, json, os
 
 # 机场的地址
 url = os.environ.get('URL')
@@ -10,27 +8,16 @@ config = os.environ.get('CONFIG')
 # server酱
 SCKEY = os.environ.get('SCKEY')
 
-# GeeTest V4 验证码 ID（从 ikuuu.org 提取）
-CAPTCHA_ID = 'cc96d05ba8b60f9112f76e18526fcb73'
-
 login_url = '{}/auth/login'.format(url)
 check_url = '{}/user/checkin'.format(url)
 
-MAX_RETRIES = 3
-
-
-def build_login_data(user, pwd, captcha, page_loaded_at):
-        """构造同时兼容新版分阶段登录和旧版登录接口的表单。"""
+def build_login_data(user, pwd):
+        """按 onesy3 登录页构造表单，未启用两步验证时 code 留空。"""
         return {
-                'host': urlparse(url).netloc,
-                'phase': 'password',
                 'email': user,
                 'passwd': pwd,
-                'pageLoadedAt': page_loaded_at,
-                'captcha_result[lot_number]': captcha['lot_number'],
-                'captcha_result[captcha_output]': captcha['captcha_output'],
-                'captcha_result[pass_token]': captcha['pass_token'],
-                'captcha_result[gen_time]': captcha['gen_time'],
+                'code': '',
+                'remember_me': 'week',
         }
 
 
@@ -40,24 +27,6 @@ def login_succeeded(response):
                 response.get('phase') == 'authenticated'
                 or str(response.get('ret')) == '1'
         )
-
-def solve_captcha():
-        """使用 GeekedTest 求解 GeeTest V4 验证码（纯 Python，无需浏览器），支持重试"""
-        for attempt in range(1, MAX_RETRIES + 1):
-                try:
-                        print(f'验证码求解尝试 {attempt}/{MAX_RETRIES}...')
-                        geeked = Geeked(CAPTCHA_ID, 'ai')
-                        result = geeked.solve()
-                        print('验证码求解成功')
-                        return result
-                except Exception as ex:
-                        print(f'验证码求解失败 (尝试 {attempt}/{MAX_RETRIES}): {ex}')
-                        if attempt < MAX_RETRIES:
-                                wait = 2
-                                print(f'等待 {wait} 秒后重试...')
-                                time.sleep(wait)
-        print('所有重试均失败')
-        return None
 
 def sign(order,user,pwd):
         session = requests.session()
@@ -72,18 +41,10 @@ def sign(order,user,pwd):
                 print(f'===账号{order}进行登录...===')
                 print(f'账号：{user}')
 
-                # 先访问登录页，建立与浏览器一致的会话，并记录页面加载时间。
+                # 先访问登录页，建立与浏览器一致的会话。
                 login_page = session.get(url=login_url, headers=header, timeout=30)
                 login_page.raise_for_status()
-                page_loaded_at = int(time.time() * 1000)
-
-                # 求解 GeeTest V4 验证码
-                captcha = solve_captcha()
-                if captcha is None:
-                        print('验证码求解失败，跳过此账号')
-                        return
-
-                data = build_login_data(user, pwd, captcha, page_loaded_at)
+                data = build_login_data(user, pwd)
 
                 login_response = session.post(
                         url=login_url, headers=header, data=data, timeout=30
