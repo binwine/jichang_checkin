@@ -19,9 +19,9 @@ EMAIL 不设置或留空时关闭推送；原来的 SCKEY 不再使用。只有 
 
 在 Actions Secrets 中新增以下三项，全部配置后自动启用：
 
-- `QQ_APP_ID`：QQ 开放平台机器人的 AppID。
-- `QQ_APP_SECRET`：同一个机器人的 AppSecret。
-- `QQ_OPEN_ID`：接收者在该机器人下的 C2C OpenID，**不是 QQ 号码，也不是群 OpenID**。可在支持上述 PR 功能的 BetterGI 中配置同一个机器人，使用“绑定 OpenID”功能获取后填入；本脚本不监听绑定事件。
+- `AppID`：QQ 开放平台机器人的 AppID。
+- `AppSecret`：同一个机器人的 AppSecret。
+- `openID`：接收者在该机器人下的 C2C OpenID，**不是 QQ 号码，也不是群 OpenID**。可在支持上述 PR 功能的 BetterGI 中配置同一个机器人，使用“绑定 OpenID”功能获取后填入；本脚本不监听绑定事件。
 
 QQ 机器人须具备对应的私聊发送权限；平台的主动消息限制仍然适用，配置凭证不保证每次定时推送都能送达。HTTP 或接口报错会记录失败，且不会影响签到或企业微信推送。
 
