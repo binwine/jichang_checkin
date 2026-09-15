@@ -1,4 +1,6 @@
-import requests, json, os
+import requests, json, os, re
+from html.parser import HTMLParser
+from urllib.parse import urlparse
 
 # 机场的地址
 url = os.environ.get('URL')
@@ -22,11 +24,74 @@ def build_login_data(user, pwd):
 
 
 def login_succeeded(response):
-        """兼容新版 phase 响应和旧版 ret 响应。"""
+        """ret=2 表示认证成功，但仍需选择子账号。"""
         return (
                 response.get('phase') == 'authenticated'
-                or str(response.get('ret')) == '1'
+                or str(response.get('ret')) in ('1', '2')
         )
+
+class AccountParser(HTMLParser):
+        """读取账号选择页中 relogin 按钮的邮箱及显示文字。"""
+        def __init__(self):
+                super().__init__()
+                self.accounts = []
+                self.current = None
+                self.div_depth = 0
+
+        def handle_starttag(self, tag, attrs):
+                if tag != 'div':
+                        return
+                if self.current is not None:
+                        self.div_depth += 1
+                        return
+                onclick = dict(attrs).get('onclick', '')
+                match = re.fullmatch(r'''\s*relogin\(\s*(['"])([^'"]+)\1\s*\)\s*;?\s*''', onclick)
+                if match:
+                        self.current = {'email': match.group(2), 'text': ''}
+                        self.div_depth = 1
+
+        def handle_data(self, data):
+                if self.current is not None:
+                        self.current['text'] += data
+
+        def handle_endtag(self, tag):
+                if tag == 'div' and self.current is not None:
+                        self.div_depth -= 1
+                        if self.div_depth == 0:
+                                self.accounts.append(self.current)
+                                self.current = None
+
+
+def find_subaccount(html):
+        parser = AccountParser()
+        parser.feed(html)
+        for account in parser.accounts:
+                if '使用子账户登录' in account['text']:
+                        return account['email']
+        raise ValueError('账号选择页未找到子账号，停止签到，避免误签主账号')
+
+
+def select_subaccount(session, header):
+        """对应选择页的 relogin(email)：以普通表单切换到第一个子账号。"""
+        accounts_url = f'{url}/user/accounts'
+        page_header = {key: value for key, value in header.items()
+                       if key.lower() != 'x-requested-with'}
+        accounts_page = session.get(url=accounts_url, headers=page_header, timeout=30)
+        accounts_page.raise_for_status()
+        email = find_subaccount(accounts_page.text)
+        print('检测到主／子账号选择页，正在进入第一个子账号...')
+        page_header['referer'] = accounts_url
+        switched = session.post(
+                url=f'{url}/user/redirect', headers=page_header,
+                data={'email': email}, timeout=30,
+        )
+        switched.raise_for_status()
+        destination = urlparse(switched.url)
+        origin = urlparse(url)
+        if (destination.scheme, destination.netloc) != (origin.scheme, origin.netloc) or destination.path.rstrip('/') != '/user':
+                raise ValueError('子账号切换后未进入用户中心，停止签到')
+        print('已进入子账号用户中心')
+
 
 def sign(order,user,pwd):
         session = requests.session()
@@ -64,8 +129,14 @@ def sign(order,user,pwd):
                                 print('推送成功')
                         return
 
-                # 进行签到
-                res2 = session.post(url=check_url,headers=header).text
+                if str(response.get('ret')) == '2':
+                        select_subaccount(session, header)
+
+                # 使用切换后的会话进行签到。
+                header['referer'] = f'{url}/user'
+                check_response = session.post(url=check_url, headers=header, timeout=30)
+                check_response.raise_for_status()
+                res2 = check_response.text
                 print(res2)
                 result = json.loads(res2)
                 print(result['msg'])
