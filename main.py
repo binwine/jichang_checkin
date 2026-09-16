@@ -67,7 +67,7 @@ def send_wecom_notification(content):
 
 
 def build_login_data(user, pwd):
-        """按 onesy3 登录页构造表单，未启用两步验证时 code 留空。"""
+        """按登录页构造表单，未启用两步验证时 code 留空。"""
         return {
                 'email': user,
                 'passwd': pwd,
@@ -186,9 +186,9 @@ def sign(order,user,pwd):
                 check_response = session.post(url=check_url, headers=header, timeout=30)
                 check_response.raise_for_status()
                 res2 = check_response.text
-                print(res2)
+                # print(res2)
                 result = json.loads(res2)
-                print(result['msg'])
+                # print(result['msg'])
                 content = result['msg']
                 # 进行推送
                 send_notification(f'账号{order}：{content}')

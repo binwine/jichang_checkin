@@ -39,14 +39,14 @@ QQ 三项全部留空关闭 QQ 推送。可以只启用 QQ，也可以和企业�
 1. 右上角Fork此仓库
 2. 然后到`Settings`→`Secrets and variables`→`Actions` 新建以下机密：
 
-| 参数   | 是否必须  | 内容  | 
-| ------------ | ------------ | ------------ |
-| CONFIG| 是  | 账号密码  |
-| URL | 是 | 机场地址，当前为 `` |
-| EMAIL | 否 | 企业微信群机器人 key 或完整 Webhook 地址，留空关闭推送 |
-| QQ_APP_ID | 否 | QQ 官方机器人的 AppID，启用 QQ 时必填 |
-| QQ_APP_SECRET | 否 | QQ 官方机器人的 AppSecret，启用 QQ 时必填 |
-| QQ_OPEN_ID | 否 | 接收者的 C2C OpenID，启用 QQ 时必填 |
+| 参数            | 是否必须  | 内容  | 
+|---------------| ------------ | ------------ |
+| CONFIG        | 是  | 账号密码  |
+| URL           | 是 | 机场地址，当前为 `` |
+| EMAIL         | 否 | 企业微信群机器人 key 或完整 Webhook 地址，留空关闭推送 |
+| APPID         | 否 | QQ 官方机器人的 AppID，启用 QQ 时必填 |
+| APPSECRET | 否 | QQ 官方机器人的 AppSecret，启用 QQ 时必填 |
+| OPENID    | 否 | 接收者的 C2C OpenID，启用 QQ 时必填 |
 <br/>
 <b>其中URL的值必须是机场网站的地址，例如：https://example.com</b>,尾部不要加''' / '''号 config写法：一行账号一行密码
 
