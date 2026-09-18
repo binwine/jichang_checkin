@@ -23,6 +23,10 @@ EMAIL 不设置或留空时关闭推送；原来的 SCKEY 不再使用。只有 
 - `AppSecret`：同一个机器人的 AppSecret。
 - `openID`：接收者在该机器人下的 C2C OpenID，**不是 QQ 号码，也不是群 OpenID**。可在支持上述 PR 功能的 BetterGI 中配置同一个机器人，使用“绑定 OpenID”功能获取后填入；本脚本不监听绑定事件。
 
+#### openid获取
+[参考](https://github.com/binwine/jichang_checkin/releases) 下载qq_openid.exe
+
+
 QQ 机器人须具备对应的私聊发送权限；平台的主动消息限制仍然适用，配置凭证不保证每次定时推送都能送达。HTTP 或接口报错会记录失败，且不会影响签到或企业微信推送。
 
 消息格式如下，时间统一为北京时间（UTC+8）：
